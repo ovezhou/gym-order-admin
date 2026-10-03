@@ -1,5 +1,5 @@
 import { App as AntdApp, ConfigProvider } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+import zhCN from 'antd/es/locale/zh_CN';
 import { BrowserRouter } from 'react-router';
 import AppRoutes from './router/AppRoutes';
 import HttpFeedbackBridge from './components/HttpFeedbackBridge';

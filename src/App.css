@@ -141,6 +141,59 @@
 .page-title.ant-typography {
   margin: 24px 0;
 }
+.orders-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.orders-card .ant-card-body {
+  padding: 0;
+}
+.orders-card .ant-tabs-nav {
+  padding: 0 24px;
+  margin: 0;
+}
+.order-search {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px;
+}
+.order-search .ant-form-item {
+  flex: 1 1 210px;
+  max-width: 300px;
+  margin-bottom: 0;
+}
+.order-search .search-actions {
+  flex: 0 0 auto;
+  max-width: none;
+}
+.orders-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 24px 20px;
+}
+.orders-meta .ant-typography {
+  font-size: 13px;
+}
+.order-number {
+  font-family: Consolas, monospace;
+}
+.order-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.orders-card .ant-table-pagination {
+  margin: 20px 24px;
+}
+.orders-error {
+  margin: 0 24px 20px;
+}
 .page-loading,
 .not-found-page {
   display: grid;
