@@ -1,7 +1,7 @@
 # 健身房会员办卡订单管理模块
 
 前端工程师笔试项目，按阶段开发、验收和提交 Git。
-当前仅完成项目初始化；业务功能尚未实现，不能作为完整答卷提交。
+当前已完成初始化、登录和后台路由布局；订单业务尚未实现，不能作为完整答卷提交。
 
 ## 技术栈
 
@@ -23,6 +23,7 @@ npm run dev
 ```sh
 npm run lint
 npm run format:check
+npm test
 npm run build
 npm run preview
 ```
@@ -37,10 +38,15 @@ gym-order-admin/
 ├── public/                 # 静态资源
 ├── src/
 │   ├── assets/             # 模板资源
-│   ├── App.jsx             # 页面入口，目前是初始化说明页
+│   ├── App.jsx             # 主题、antd App 上下文、BrowserRouter
 │   ├── App.css             # 页面样式
 │   ├── index.css           # 全局样式
+│   ├── layouts/            # 左侧菜单、顶部栏、面包屑、内容区
+│   ├── pages/              # 登录、订单入口、新建入口、404
+│   ├── router/             # 路由配置与 RequireAuth 守卫
+│   ├── stores/             # zustand 登录态及存储同步
 │   └── main.jsx            # React 18 createRoot 入口
+├── tests/                  # Node 内置测试，无额外测试依赖
 ├── .env.example            # 请求地址示例，后续接入
 ├── eslint.config.js        # ESLint 配置
 ├── .prettierrc.json         # Prettier 配置
@@ -49,17 +55,28 @@ gym-order-admin/
 └── vite.config.js
 ```
 
-## 请求层与状态管理设计（待实现）
+## 请求层与状态管理设计
 
-所有业务请求经过 axios 实例，baseURL 读取 VITE_API_BASE_URL；请求拦截器读取最新
+请求层将在阶段 3 实现：所有业务请求经过 axios 实例，baseURL 读取 VITE_API_BASE_URL；请求拦截器读取最新
 token 并注入 Authorization。响应拦截器统一提示错误，401 清除登录态并返回登录页。
 
 模拟接口维护模块级内存数据，至少 30 条订单覆盖六种状态。查询支持筛选、排序和分页；
 新建、续卡、撤单修改同一份数据，刷新浏览器后允许重置。拟通过 axios-mock-adapter
 接入，确保页面不绕过请求层。具体实现文件在后续阶段补充。
 
-zustand 管理登录用户、token 及登录/退出动作；列表查询和弹窗状态由页面和自定义 hook
-管理。localStorage 持久化 token 和用户名，初始化时恢复登录态。
+已实现：`src/stores/authStore.js` 的 zustand store 管理用户名、token 以及 login/logout。
+`gym-order-session` 是 localStorage 的唯一登录键，仅保存 mock token 和用户名，不保存密码。
+初始化同步读取并校验存储，再让路由守卫判断登录，避免刷新时先跳登录再恢复的闪烁。
+登录先写存储再更新状态，存储失败则提示并维持未登录；退出删除保存的信息并清空内存状态。
+损坏或不完整的存储会清理并退回未登录，不导致白屏。
+
+`RequireAuth` 使用 Outlet 保护 /、/orders、/orders/new，未登录以 replace 跳到 /login，
+保存原目标。登录后只允许返回已知后台路由，避免任意外部跳转；直接登录默认进入 /orders。
+登录用户再访问 /login 会进入订单列表。未知地址始终显示独立 404 页。
+后台布局依据当前 pathname 更新菜单选中项及面包屑。页面通过 React.lazy 和 Suspense 按需加载。
+提示使用 antd App.useApp，确保继承主题和中文配置。
+
+列表查询和弹窗状态将在后续页面和自定义 hook 中管理，不全部塞进全局 store。
 
 ## 需求理解与实现约定（后续按此实现）
 
@@ -111,10 +128,14 @@ zustand 管理登录用户、token 及登录/退出动作；列表查询和弹�
 检查生成的依赖后，限定 React 18 / Router 7 / antd 5，替换为 ESLint，增加 Prettier
 与冲突规则配置，通过安装版本和检查命令验证。业务阶段的难点在完成对应功能后补充。
 
+阶段 2 的关键问题是刷新恢复登录与路由判断的时序。若仅在页面 effect 中恢复 token，
+守卫可能先认定未登录并跳转。解决方式是在创建 store 时同步恢复，守卫订阅最新 token；
+结合真实浏览器刷新验证，以及正常、损坏、写入失败和退出后恢复的自动测试。
+
 ## 开发进度与验收记录
 
 - [x] 阶段 1：初始化、版本约束、ESLint、Prettier、Git
-- [ ] 阶段 2：路由、布局、登录与守卫
+- [x] 阶段 2：路由、布局、登录与守卫
 - [ ] 阶段 3：axios 与可写模拟接口
 - [ ] 阶段 4：列表、Tab、搜索、分页、金额
 - [ ] 阶段 5：新建订单
@@ -130,6 +151,16 @@ zustand 管理登录用户、token 及登录/退出动作；列表查询和弹�
 - 构建提示入口包约 514 kB（gzip 约 166 kB）；后续路由阶段再评估按页加载。
 - node_modules 和 dist 由 .gitignore 排除。
 
+阶段 2 实际验证：
+
+- ESLint、Prettier、生产构建和 4 项登录态测试通过。
+- 浏览器验证：未登录访问新建订单跳登录；空提交提示必填；登录返回原新建地址；
+  刷新仍显示用户名；菜单切换更新标题与面包屑；退出返回登录；退出后直接访问列表仍被拦截；
+  未知路径显示 404。
+- 404 返回按钮正常；直接登录默认进入订单列表；已登录访问 /login 自动进入后台。
+- 登录页、订单页、新建页、404 按页分包，入口约 304 kB；本阶段构建无大包告警。
+- 订单页和新建页目前为明确标注的功能入口，后续阶段接入业务功能。
+
 ## 使用工具（如实记录）
 
 - Codex：协助拆解需求、操作初始化、编写配置和 README。
@@ -138,6 +169,8 @@ zustand 管理登录用户、token 及登录/退出动作；列表查询和弹�
 - ESLint / Prettier / Vite：代码检查、格式化、开发启动和构建。
 - Git：保存阶段提交记录。
 - 官方文档：核对 Vite 环境要求、Router v7 用法和 Prettier 与 ESLint 的配合。
+- Codex 应用内浏览器：实际验证登录表单、路由跳转、刷新、菜单、退出和 404。
+- Node 内置 test / assert：验证登录态持久化、退出清理、异常存储恢复和写入失败。
 
 ## 提交要求
 

@@ -25,5 +25,9 @@ export default [
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  {
+    files: ['tests/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
   prettier,
 ];
