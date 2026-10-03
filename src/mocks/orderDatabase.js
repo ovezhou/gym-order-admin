@@ -1,6 +1,7 @@
 import { ORDER_STATUS, ORDER_TABS, calculateCardFee, isValidYears } from '../domain/orders.js';
 import { createSeedOrders } from './seedOrders.js';
 import { getNewOrderErrors, normalizeNewOrder } from '../domain/newOrder.js';
+import { ORDER_ACTION_RULES } from '../domain/orderActions.js';
 
 export class MockApiError extends Error {
   constructor(message, status = 400, details = {}) {
@@ -119,7 +120,7 @@ export function createOrderDatabase({ now = () => Date.now() } = {}) {
     renew({ ids, years }) {
       if (!isValidYears(years)) throw new MockApiError('续卡年限必须为 1～10 的整数');
       const selection = findSelection(ids);
-      validateSelection(selection, [ORDER_STATUS.EXPIRED], '续卡');
+      validateSelection(selection, ORDER_ACTION_RULES.renew.allowed, '续卡');
       const feePerOrder = calculateCardFee(years, { renewal: true });
       // Validate the whole batch before applying any write.
       for (const order of selection) {
@@ -136,11 +137,7 @@ export function createOrderDatabase({ now = () => Date.now() } = {}) {
     },
     cancel({ ids }) {
       const selection = findSelection(ids);
-      validateSelection(
-        selection,
-        [ORDER_STATUS.PENDING_CARD, ORDER_STATUS.PENDING_SHIPPING],
-        '撤单',
-      );
+      validateSelection(selection, ORDER_ACTION_RULES.cancel.allowed, '撤单');
       for (const order of selection) order.status = ORDER_STATUS.CANCELLED;
       return { items: structuredClone(selection) };
     },

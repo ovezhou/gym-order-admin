@@ -194,6 +194,43 @@
 .orders-error {
   margin: 0 24px 20px;
 }
+.orders-batch-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 24px 20px;
+}
+.orders-batch-toolbar > .ant-typography {
+  font-size: 12px;
+}
+.action-order-list {
+  max-height: 180px;
+  overflow-y: auto;
+  padding-left: 24px;
+  margin: 16px 0 24px;
+  font-family: Consolas, sans-serif;
+}
+.action-order-list li {
+  padding: 4px 0;
+  overflow-wrap: anywhere;
+}
+.action-error {
+  margin-bottom: 20px;
+}
+.renewal-quote {
+  padding: 16px;
+  background: #f4f7f5;
+  border-radius: 8px;
+}
+.renewal-quote > .ant-typography {
+  font-size: 12px;
+}
+.action-modal-footer {
+  margin-top: 24px;
+  text-align: right;
+}
 .new-order-card {
   max-width: 920px;
 }
