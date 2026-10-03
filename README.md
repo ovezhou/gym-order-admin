@@ -38,7 +38,7 @@ Windows PowerShell 若提示 npm.ps1 执行策略错误，可将 npm 替换为 n
 gym-order-admin/
 ├── public/                 # 静态资源，包含健身房背景图和会员卡品牌图标
 ├── src/
-│   ├── assets/             # 模板资源
+│   ├── assets/             # 未使用的 Vite 模板资源，可在提交前清理
 │   ├── App.jsx             # 主题、antd App 上下文、BrowserRouter
 │   ├── App.css             # 页面样式
 │   ├── index.css           # 全局样式
@@ -223,9 +223,9 @@ tab 为 all / in_progress / expired / completed / cancelled。订单号精确匹
 
 ## 最难的问题与解决过程
 
-当前阶段遇到的问题是新 Vite 模板默认 React 19 和 Oxlint，与题目不一致。
+初始化时遇到的问题是新 Vite 模板默认 React 19 和 Oxlint，与题目不一致。
 检查生成的依赖后，限定 React 18 / Router 7 / antd 5，替换为 ESLint，增加 Prettier
-与冲突规则配置，通过安装版本和检查命令验证。业务阶段的难点在完成对应功能后补充。
+与冲突规则配置，通过安装版本和检查命令验证。
 
 阶段 2 的关键问题是刷新恢复登录与路由判断的时序。若仅在页面 effect 中恢复 token，
 守卫可能先认定未登录并跳转。解决方式是在创建 store 时同步恢复，守卫订阅最新 token；
