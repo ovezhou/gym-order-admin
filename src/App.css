@@ -205,6 +205,22 @@
 .orders-batch-toolbar > .ant-typography {
   font-size: 12px;
 }
+.orders-export-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 24px 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5ebe7;
+}
+.orders-export-bar .ant-typography {
+  font-size: 12px;
+}
+.orders-export-receipt {
+  margin: 0 24px 20px;
+}
 .action-order-list {
   max-height: 180px;
   overflow-y: auto;

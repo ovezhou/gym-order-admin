@@ -5,6 +5,7 @@ import useOrders from '../hooks/useOrders.js';
 import { ORDER_TABS, ORDER_STATUS } from '../domain/orders.js';
 import { ORDER_ACTION_RULES } from '../domain/orderActions.js';
 import useOrderActions from '../hooks/useOrderActions.jsx';
+import useOrderExport from '../hooks/useOrderExport.jsx';
 import OrderActionModal from '../components/OrderActionModal.jsx';
 import OrderStatusTag from '../components/OrderStatusTag';
 import { formatAmount, formatDateTime } from '../utils/format.js';
@@ -46,12 +47,14 @@ export default function OrdersPage() {
     changePage,
     refresh,
   } = useOrders();
+  const orderExport = useOrderExport();
 
   const actions = useOrderActions((updatedOrders) => {
     const updatedIds = new Set(updatedOrders.map((order) => order.id));
     setSelectedRowKeys((keys) => keys.filter((id) => !updatedIds.has(id)));
     refresh();
   });
+  const operationBusy = actions.busy || orderExport.busy;
   const tableColumns = [
     ...columns,
     {
@@ -65,7 +68,7 @@ export default function OrdersPage() {
             <Button
               type="link"
               size="small"
-              disabled={actions.busy}
+              disabled={operationBusy}
               onClick={() => actions.prepare('renew', [order.id])}
             >
               续卡
@@ -76,7 +79,7 @@ export default function OrdersPage() {
               type="link"
               danger
               size="small"
-              disabled={actions.busy}
+              disabled={operationBusy}
               onClick={() => actions.prepare('cancel', [order.id])}
             >
               撤单
@@ -100,10 +103,14 @@ export default function OrdersPage() {
       <div className="orders-toolbar">
         <Typography.Text type="secondary">查询与跟进会员办卡订单</Typography.Text>
         <Space>
-          <Button onClick={refresh} disabled={loading}>
+          <Button onClick={refresh} disabled={loading || orderExport.busy}>
             刷新
           </Button>
-          <Button type="primary" onClick={() => navigate('/orders/new')}>
+          <Button
+            type="primary"
+            disabled={orderExport.busy}
+            onClick={() => navigate('/orders/new')}
+          >
             新建订单
           </Button>
         </Space>
@@ -112,7 +119,7 @@ export default function OrdersPage() {
         <Tabs
           activeKey={query.tab}
           onChange={changeTab}
-          items={ORDER_TABS.map(({ key, label }) => ({ key, label }))}
+          items={ORDER_TABS.map(({ key, label }) => ({ key, label, disabled: orderExport.busy }))}
         />
         <Form
           form={form}
@@ -120,6 +127,7 @@ export default function OrdersPage() {
           layout="vertical"
           className="order-search"
           onFinish={search}
+          disabled={orderExport.busy}
         >
           <Form.Item label="订单号" name="orderNo">
             <Input placeholder="输入完整订单号" allowClear autoComplete="off" />
@@ -143,21 +151,21 @@ export default function OrdersPage() {
         <div className="orders-batch-toolbar">
           <Space wrap>
             <Button
-              disabled={!selectedRowKeys.length || actions.busy || loading}
+              disabled={!selectedRowKeys.length || operationBusy || loading}
               onClick={() => actions.prepare('renew', selectedRowKeys)}
             >
               批量续卡
             </Button>
             <Button
               danger
-              disabled={!selectedRowKeys.length || actions.busy || loading}
+              disabled={!selectedRowKeys.length || operationBusy || loading}
               onClick={() => actions.prepare('cancel', selectedRowKeys)}
             >
               一键撤单
             </Button>
             <Button
               type="text"
-              disabled={!selectedRowKeys.length || actions.busy}
+              disabled={!selectedRowKeys.length || operationBusy}
               onClick={() => setSelectedRowKeys([])}
             >
               清空选择
@@ -168,6 +176,35 @@ export default function OrdersPage() {
             笔（含其他页与筛选）
           </Typography.Text>
         </div>
+        <div className="orders-export-bar">
+          <Space wrap>
+            <Button
+              loading={orderExport.busy}
+              disabled={loading || actions.busy || !!actions.operation}
+              onClick={() => orderExport.exportOrders(query, selectedRowKeys)}
+            >
+              导出 CSV
+            </Button>
+            <Typography.Text type="secondary">
+              导出范围：
+              {selectedRowKeys.length
+                ? `已勾选 ${selectedRowKeys.length} 笔（含跨页记录）`
+                : '全部筛选结果（含所有分页）'}
+            </Typography.Text>
+          </Space>
+          <Typography.Text type="secondary">仅已完成、已到期可导出</Typography.Text>
+        </div>
+        {orderExport.receipt && (
+          <Alert
+            className="orders-export-receipt"
+            type="success"
+            showIcon
+            closable
+            onClose={orderExport.clearReceipt}
+            message={`已生成 ${orderExport.receipt.count} 笔订单的 CSV`}
+            description={`${orderExport.receipt.filename} · ${orderExport.receipt.scope}`}
+          />
+        )}
         {error && (
           <Alert
             className="orders-error"
@@ -192,11 +229,11 @@ export default function OrdersPage() {
             fixed: true,
             columnWidth: 48,
             getCheckboxProps: (order) => ({
-              disabled: actions.busy,
+              disabled: operationBusy,
               'aria-label': `选择订单 ${order.orderNo}`,
             }),
             getTitleCheckboxProps: () => ({
-              disabled: actions.busy || loading,
+              disabled: operationBusy || loading,
               'aria-label': '选择当前页全部订单',
             }),
           }}
@@ -213,6 +250,7 @@ export default function OrdersPage() {
             ),
           }}
           pagination={{
+            disabled: orderExport.busy,
             current: query.page,
             pageSize: query.pageSize,
             total,
