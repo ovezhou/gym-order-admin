@@ -1,5 +1,6 @@
 import { ORDER_STATUS, ORDER_TABS, calculateCardFee, isValidYears } from '../domain/orders.js';
 import { createSeedOrders } from './seedOrders.js';
+import { getNewOrderErrors, normalizeNewOrder } from '../domain/newOrder.js';
 
 export class MockApiError extends Error {
   constructor(message, status = 400, details = {}) {
@@ -29,18 +30,10 @@ function searchText(value) {
 }
 
 function validateNewOrder(payload) {
-  const memberName = typeof payload.memberName === 'string' ? payload.memberName.trim() : '';
-  const phone = typeof payload.phone === 'string' ? payload.phone.trim() : '';
-  const remark = payload.remark ?? '';
-  const fields = {};
-  if ([...memberName].length < 2 || [...memberName].length > 30)
-    fields.memberName = '会员姓名必须为 2～30 个字符';
-  if (!/^1[3-9]\d{9}$/.test(phone)) fields.phone = '请输入有效的中国大陆手机号';
-  if (!isValidYears(payload.years)) fields.years = '购卡年限必须为 1～10 的整数';
-  if (typeof remark !== 'string' || [...remark].length > 200) fields.remark = '备注最多 200 个字符';
+  const fields = getNewOrderErrors(payload);
   if (Object.keys(fields).length)
     throw new MockApiError(Object.values(fields).join('；'), 400, { fields });
-  return { memberName, phone, years: payload.years, remark };
+  return normalizeNewOrder(payload);
 }
 
 export function createOrderDatabase({ now = () => Date.now() } = {}) {

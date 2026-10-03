@@ -194,6 +194,27 @@
 .orders-error {
   margin: 0 24px 20px;
 }
+.new-order-card {
+  max-width: 920px;
+}
+.new-order-form {
+  max-width: 640px;
+}
+.new-order-form .year-input {
+  width: 100%;
+}
+.new-order-form .fee-input input {
+  background: #f4f7f5;
+  font-variant-numeric: tabular-nums;
+}
+.new-order-error {
+  margin-bottom: 24px;
+}
+.new-order-actions {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5ebe7;
+}
 .page-loading,
 .not-found-page {
   display: grid;
