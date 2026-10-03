@@ -365,7 +365,7 @@ reducer 查询对象校验，只接受当前查询的结果与错误。自动测
 - Codex：协助拆解需求、操作初始化、编写配置和 README。
 - imagegen：生成登录页使用的现代健身房器械与空间背景图；CSS 叠加绿色渐变，
   保证左侧文字清晰。该图为本项目生成并存放于 public/images/gym-login.png。
-- 手写 SVG：制作会员卡图标；浏览器 favicon、登录页和侧栏共用同一图形。
+- 手写 SVG：浏览器 favicon 使用绿色哑铃图标；登录页和侧栏共用会员卡品牌图标。
 - PowerShell：环境检查、安装、校验和 Git 命令。
 - create-vite / npm：创建 React JavaScript 项目、安装和锁定依赖。
 - ESLint / Prettier / Vite：代码检查、格式化、开发启动和构建。
