@@ -32,14 +32,16 @@ export default function LoginPage() {
         <div className="login-wordmark">
           <span className="brand-mark">G</span>健身房会员管理
         </div>
-        <Typography.Title>
-          每一张会员卡，
-          <br />
-          都跟进到位。
-        </Typography.Title>
-        <p>从办卡申请到会员续卡，在一个工作台中管理订单。</p>
-        <div className="login-flow">
-          待审核<span>→</span>待制卡<span>→</span>待寄卡<span>→</span>已完成
+        <div className="login-copy">
+          <Typography.Title>
+            每一张会员卡，
+            <br />
+            都跟进到位。
+          </Typography.Title>
+          <p>从会员办卡到订单完成，一站式管理每一个业务环节。</p>
+          <div className="login-flow">
+            待审核<span>→</span>待制卡<span>→</span>待寄卡<span>→</span>已完成
+          </div>
         </div>
       </section>
       <section className="login-panel">
