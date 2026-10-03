@@ -1,7 +1,8 @@
 # 健身房会员办卡订单管理模块
 
 前端工程师笔试项目，按阶段开发、验收和提交 Git。
-当前已完成初始化、登录和后台路由布局；订单业务尚未实现，不能作为完整答卷提交。
+当前已完成初始化、登录、后台布局、请求层和可写模拟接口。
+列表、表单、操作弹窗及导出仍待接入，不能作为完整答卷提交。
 
 ## 技术栈
 
@@ -41,13 +42,18 @@ gym-order-admin/
 │   ├── App.jsx             # 主题、antd App 上下文、BrowserRouter
 │   ├── App.css             # 页面样式
 │   ├── index.css           # 全局样式
+│   ├── api/                # 订单 API，页面通过这里访问接口
+│   ├── components/         # 全局请求提示及登录跳转桥接
+│   ├── domain/             # 状态、Tab、费用与年限规则
 │   ├── layouts/            # 左侧菜单、顶部栏、面包屑、内容区
+│   ├── mocks/              # 36 条初始数据、内存数据库、模拟接口
 │   ├── pages/              # 登录、订单入口、新建入口、404
 │   ├── router/             # 路由配置与 RequireAuth 守卫
+│   ├── services/           # axios 实例、拦截器与通知事件
 │   ├── stores/             # zustand 登录态及存储同步
 │   └── main.jsx            # React 18 createRoot 入口
 ├── tests/                  # Node 内置测试，无额外测试依赖
-├── .env.example            # 请求地址示例，后续接入
+├── .env.example            # 请求地址示例，默认 /api
 ├── eslint.config.js        # ESLint 配置
 ├── .prettierrc.json         # Prettier 配置
 ├── package.json
@@ -57,12 +63,27 @@ gym-order-admin/
 
 ## 请求层与状态管理设计
 
-请求层将在阶段 3 实现：所有业务请求经过 axios 实例，baseURL 读取 VITE_API_BASE_URL；请求拦截器读取最新
-token 并注入 Authorization。响应拦截器统一提示错误，401 清除登录态并返回登录页。
+已实现：`src/services/http.js` 创建统一 axios 实例，baseURL 读取 VITE_API_BASE_URL，
+缺省为 /api；超时 15 秒。请求拦截器每次获取 zustand 最新 token，注入
+Authorization: Bearer <token>，未登录时删除旧请求头。
+响应拦截器返回 response.data，统一处理业务错误、网络异常及超时，同时保持 Promise 拒绝，
+供页面停止加载、保留表单等。主动取消的查询不弹出错误。
 
-模拟接口维护模块级内存数据，至少 30 条订单覆盖六种状态。查询支持筛选、排序和分页；
-新建、续卡、撤单修改同一份数据，刷新浏览器后允许重置。拟通过 axios-mock-adapter
-接入，确保页面不绕过请求层。具体实现文件在后续阶段补充。
+401 会清除 zustand 和 localStorage 登录态，发出 unauthorized 事件。
+`HttpFeedbackBridge` 在 antd App 和 BrowserRouter 内订阅事件，显示中文错误，
+用 navigate replace 返回 /login 并记住原路径。并发 401 只处理一次；
+重新登录后恢复处理能力。旧会话的迟到 401 不清除新会话。
+请求工厂可注入 token、提示及退出动作，让自动测试验证真实拦截器而不依赖 React 渲染。
+
+`src/mocks/installMockApi.js` 用 axios-mock-adapter 拦截同一个实例，浏览器与 Node
+均可运行。开发及生产预览都启用模拟接口，默认延迟 250ms，无需独立后端。
+`orderDatabase.js` 闭包维护一份内存数据；36 条初始订单覆盖六种状态，每种 6 条，
+包含零元、null、缺少金额字段、空字符串等边界数据。新建、续卡、撤单修改这份数据，
+随后查询返回变更；刷新或开发热更新重新初始化数据。退出不会主动重置订单。
+
+模拟接口验证 token 的 mock 格式，仅供本题演示；不构成真实鉴权。
+批量写入先检查全部 ID 和状态再统一修改，无部分成功；重复 ID 去重，避免重复收费。
+返回副本，避免页面直接改写数据库。费用由接口计算，不信任前端提交的金额或状态。
 
 已实现：`src/stores/authStore.js` 的 zustand store 管理用户名、token 以及 login/logout。
 `gym-order-session` 是 localStorage 的唯一登录键，仅保存 mock token 和用户名，不保存密码。
@@ -78,6 +99,29 @@ token 并注入 Authorization。响应拦截器统一提示错误，401 清除�
 
 列表查询和弹窗状态将在后续页面和自定义 hook 中管理，不全部塞进全局 store。
 
+## 模拟接口约定
+
+以下路径相对于 baseURL；调用 `src/api/orders.js` 时直接获得数据对象，无需再读取 `.data`。
+
+| 方法 | 路径           | 参数或请求体                             | 返回                          |
+| ---- | -------------- | ---------------------------------------- | ----------------------------- |
+| GET  | /orders        | tab、orderNo、memberName、page、pageSize | items、total、page、pageSize  |
+| GET  | /orders/all    | tab、orderNo、memberName，忽略分页       | items、total                  |
+| POST | /orders/lookup | ids 数组                                 | items，包含各页记录的最新数据 |
+| POST | /orders        | memberName、phone、years、remark         | 新订单，HTTP 201              |
+| POST | /orders/renew  | ids、years                               | items、feePerOrder、totalFee  |
+| POST | /orders/cancel | ids                                      | items                         |
+
+tab 为 all / in_progress / expired / completed / cancelled。订单号精确匹配，
+姓名去首尾空格后模糊匹配，筛选组合生效；默认 page=1、pageSize=10，单页最多 100 条。
+所有列表按创建时间降序；时间相同按订单号降序稳定排序。空查询返回空数组和 total=0。
+
+订单字段为 id、orderNo、memberName、phone、years、amount、status、createdAt、remark。
+金额单位为元，createdAt 是 ISO 时间字符串。写操作用 id 定位记录，orderNo 用于展示与搜索。
+续卡单次输入 1～10 的整数，购卡累计年限可超过 10；创建时间保持不变。
+无效参数返回 400，未登录 401，订单不存在 404，状态冲突 409；错误体包含 message，
+必要时附带 fields、missingIds、invalidOrderNumbers，供后续表单和操作弹窗使用。
+
 ## 需求理解与实现约定（后续按此实现）
 
 1. “创建时间升序”与“最新订单在最前面”矛盾，以最新优先为准，采用降序。
@@ -92,6 +136,7 @@ token 并注入 Authorization。响应拦截器统一提示错误，401 清除�
 9. 手机号暂按中国大陆手机号校验；姓名去除首尾空格后校验 2～30 个字符。
 10. 操作成功重新查询；新建成功返回列表使用全部 Tab、空搜索条件和第 1 页。
 11. 不额外实现审核、制卡、寄卡状态推进按钮。
+12. 批量撤单也采用整批校验：包含不可撤记录时阻止整批，列出订单号，不静默跳过。
 
 ## Part 5：导出功能澄清问题
 
@@ -132,11 +177,16 @@ token 并注入 Authorization。响应拦截器统一提示错误，401 清除�
 守卫可能先认定未登录并跳转。解决方式是在创建 store 时同步恢复，守卫订阅最新 token；
 结合真实浏览器刷新验证，以及正常、损坏、写入失败和退出后恢复的自动测试。
 
+阶段 3 的难点是批量状态校验与写入一致性。若一边遍历一边修改，后面的订单不合法时，
+前面的订单已被更新。解决方式是先去重、查找全部订单、校验状态，再同步执行全部修改。
+通过混合状态、缺失 ID、重复 ID 和再次查询的测试证明失败不写入、成功不重复收费。
+请求层还处理旧会话的迟到 401，以免新登录被先前请求清除。
+
 ## 开发进度与验收记录
 
 - [x] 阶段 1：初始化、版本约束、ESLint、Prettier、Git
 - [x] 阶段 2：路由、布局、登录与守卫
-- [ ] 阶段 3：axios 与可写模拟接口
+- [x] 阶段 3：axios 与可写模拟接口
 - [ ] 阶段 4：列表、Tab、搜索、分页、金额
 - [ ] 阶段 5：新建订单
 - [ ] 阶段 6：续卡与撤单
@@ -161,6 +211,17 @@ token 并注入 Authorization。响应拦截器统一提示错误，401 清除�
 - 登录页、订单页、新建页、404 按页分包，入口约 304 kB；本阶段构建无大包告警。
 - 订单页和新建页目前为明确标注的功能入口，后续阶段接入业务功能。
 
+阶段 3 验收记录：
+
+- ESLint、Prettier、生产构建和 27 项自动测试均通过。
+- 新增 36 条模拟订单及查询、新建、续卡、撤单接口，写入结果可再次查询。
+- 自动测试总计 27 项：包含前阶段 4 项登录态测试、本阶段请求层与订单接口测试。
+- 重点验证分页与组合筛选、新建默认状态与金额、续卡折扣和年限累加、撤单限制、
+  混合批次原子性、重复 ID 去重、金额边界、无效参数与不存在的订单。
+- 请求层验证最新 token、错误提示、取消查询、并发 401、旧会话迟到 401，
+  应用实例的 401 清除真实 zustand / localStorage 并发出登录跳转事件。
+- 列表和表单界面将在阶段 4、5 接入；本阶段接口测试不等同于完整页面验收。
+
 ## 使用工具（如实记录）
 
 - Codex：协助拆解需求、操作初始化、编写配置和 README。
@@ -171,6 +232,7 @@ token 并注入 Authorization。响应拦截器统一提示错误，401 清除�
 - 官方文档：核对 Vite 环境要求、Router v7 用法和 Prettier 与 ESLint 的配合。
 - Codex 应用内浏览器：实际验证登录表单、路由跳转、刷新、菜单、退出和 404。
 - Node 内置 test / assert：验证登录态持久化、退出清理、异常存储恢复和写入失败。
+- axios-mock-adapter：模拟接口及网络错误，用 Node 测试验证请求拦截器与可写业务数据。
 
 ## 提交要求
 
