@@ -1,5 +1,6 @@
 import { App, Button, Card, Form, Input, Typography } from 'antd';
 import { Navigate, useLocation, useNavigate } from 'react-router';
+import BrandMark from '../components/BrandMark.jsx';
 import { useAuthStore } from '../stores/authStore';
 
 export default function LoginPage() {
@@ -30,7 +31,8 @@ export default function LoginPage() {
     <main className="login-page">
       <section className="login-intro">
         <div className="login-wordmark">
-          <span className="brand-mark">G</span>健身房会员管理
+          <BrandMark />
+          健身房会员管理
         </div>
         <div className="login-copy">
           <Typography.Title>

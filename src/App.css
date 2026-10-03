@@ -1,15 +1,8 @@
 .brand-mark {
-  display: inline-flex;
+  display: block;
   flex: 0 0 36px;
   width: 36px;
   height: 36px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: #b7e7c8;
-  color: #144630;
-  font-size: 22px;
-  font-weight: 800;
 }
 .login-page {
   display: grid;

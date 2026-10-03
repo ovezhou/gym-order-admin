@@ -1,5 +1,6 @@
 import { App, Avatar, Breadcrumb, Button, Layout, Menu, Space, Typography } from 'antd';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import BrandMark from '../components/BrandMark.jsx';
 import { useAuthStore } from '../stores/authStore';
 
 const menuItems = [
@@ -36,7 +37,7 @@ export default function AdminLayout() {
     <Layout className="admin-layout">
       <Layout.Sider width={220} breakpoint="lg" collapsedWidth={0} className="admin-sidebar">
         <div className="brand">
-          <span className="brand-mark">G</span>
+          <BrandMark />
           <div>
             健身房管理<span>会员办卡 · 订单中心</span>
           </div>
